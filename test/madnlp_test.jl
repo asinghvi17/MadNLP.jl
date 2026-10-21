@@ -289,18 +289,6 @@ end
     @test isa(time_madnlp.time_callbacks, NamedTuple)
 end
 
-@testset "Quadmath test" begin
-    nlp = MadNLPTests.HS15Model(T = Float128)
-    result = madnlp(
-        nlp;
-        print_level = MadNLP.ERROR,
-        callback = MadNLP.SparseCallback,
-        linear_solver=LDLSolver,
-        kkt_system = MadNLP.SparseCondensedKKTSystem
-    )
-    @test result.status == MadNLP.SOLVE_SUCCEEDED
-end
-
 @testset "Adaptive barrier" begin
     nlp = MadNLPTests.HS15Model(; x0=[1.0, 1.0])
     ref = madnlp(nlp; print_level = MadNLP.ERROR)
@@ -315,6 +303,49 @@ end
         @test results.solution ≈ ref.solution
         @test results.multipliers ≈ ref.multipliers
     end
+end
+
+@testset "Adaptive barrier ($T)" for T in (Float32, Float128)
+    nlp = MadNLPTests.HS15Model(; T=T, x0=T[1, 1])
+    tol = T == Float32 ? T(1e-4) : T(1e-8)
+    for barrier in [
+        MadNLP.MonotoneUpdate(),
+        MadNLP.LOQOUpdate{T}(),
+        MadNLP.QualityFunctionUpdate{T}(),
+    ]
+        solver = MadNLPSolver(
+            nlp;
+            tol=tol,
+            callback=MadNLP.SparseCallback,
+            kkt_system=MadNLP.SparseKKTSystem,
+            linear_solver=LDLSolver,
+            print_level=MadNLP.ERROR,
+            barrier=barrier,
+        )
+        @test solver.opt.barrier isa MadNLP.AbstractBarrierUpdate{T}
+        @test solver.opt.barrier.mu_min == T(barrier.mu_min)
+
+        results = MadNLP.solve!(solver)
+        @test results.status == MadNLP.SOLVE_SUCCEEDED
+        @test eltype(results.solution) == T
+    end
+end
+
+@testset "SparseUnreducedKKTSystem ($T)" for T in (Float32, Float128)
+    nlp = MadNLPTests.HS15Model(; T=T, x0=T[1, 1])
+    solver = MadNLPSolver(
+        nlp;
+        tol=T == Float32 ? T(1e-4) : T(1e-8),
+        callback=MadNLP.SparseCallback,
+        kkt_system=MadNLP.SparseUnreducedKKTSystem,
+        linear_solver=LDLSolver,
+        print_level=MadNLP.ERROR,
+    )
+    @test eltype(solver.kkt.pr_diag) == T
+    @test eltype(solver.kkt.hess) == T
+    results = MadNLP.solve!(solver)
+    @test results.status == MadNLP.SOLVE_SUCCEEDED
+    @test eltype(results.solution) == T
 end
 
 @testset "Issue #430" begin
