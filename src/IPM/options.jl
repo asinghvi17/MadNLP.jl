@@ -235,7 +235,7 @@ function MadNLPOptions{T}(
 end
 
 get_tolerance(::Type{T},::Type{KKT}) where {T, KKT} = 10^round(log10(eps(T))/2)
-get_tolerance(::Type{T},::Type{SparseCondensedKKTSystem}) where T = 10^(round(log10(eps(T))/4))
+get_tolerance(::Type{T},::Type{SparseCondensedKKTSystem}) where T = 10^(round(log10(eps(T))/2))
 
 default_sparse_solver(nlp::AbstractNLPModel) = MumpsSolver
 
