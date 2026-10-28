@@ -2,11 +2,11 @@
 end
 const LDLF = LDLFactorizations
 
-mutable struct LDLSolver{T} <: AbstractLinearSolver{T}
-    inner::LDLF.LDLFactorization{T, Int32}
+mutable struct LDLSolver{T,F<:LDLF.LDLFactorization{T,Int32},V<:SubVector{T}} <: AbstractLinearSolver{T}
+    inner::F
     tril::SparseMatrixCSC{T,Int32}
     full::SparseMatrixCSC{T,Int32}
-    tril_to_full_view::SubVector{T,Vector{T},Vector{Int}}
+    tril_to_full_view::V
     opt::LDLFactorizationsOptions
     logger::MadNLPLogger
 end
@@ -43,9 +43,9 @@ is_inertia(::LDLSolver) = true
 function inertia(M::LDLSolver)
     (m, n) = size(M.tril)
     (pos, zero, neg) = (0, 0, 0)
-    D = M.inner.D
+    D = getfield(M.inner, :d)
     for i=1:n
-        d = D[i,i]
+        d = D[i]
         if d > 0
             pos += 1
         elseif d == 0

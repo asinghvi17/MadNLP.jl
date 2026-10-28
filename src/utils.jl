@@ -21,10 +21,12 @@ end
     file::Union{IOStream,Nothing} = nothing
 end
 
+logging_enabled(::MadNLPLogger) = true
+
 get_level(logger::MadNLPLogger) = logger.print_level
 get_file_level(logger::MadNLPLogger) = logger.file_print_level
 get_file(logger::MadNLPLogger) = logger.file
-finalize(logger::MadNLPLogger) = logger.file != nothing && close(logger.file)
+finalize(logger::MadNLPLogger) = logging_enabled(logger) && logger.file != nothing && close(logger.file)
 
 for (name,level,color) in [(:trace,TRACE,7),(:debug,DEBUG,6),(:info,INFO,256),(:notice,NOTICE,256),(:warn,WARN,5),(:error,ERROR,9)]
     @eval begin
@@ -35,6 +37,7 @@ for (name,level,color) in [(:trace,TRACE,7),(:debug,DEBUG,6),(:info,INFO,256),(:
             l = $level
             c = $color
             code = quote
+                if $logging_enabled($logger)
                 if $gl($logger) <= $l
                     if $c == 256
                         println($str)
@@ -45,6 +48,7 @@ for (name,level,color) in [(:trace,TRACE,7),(:debug,DEBUG,6),(:info,INFO,256),(:
                 if $gf($logger) != nothing && $gfl($logger) <= $l
                     println($gf($logger),$str)
                 end
+            end
             end
             esc(code)
         end
@@ -106,6 +110,13 @@ macro blas_safe_threads(args...)
 end
 
 # unsafe wrap
+# Keep CPU aliases visible to GC and graph copiers; preserve the generic backend.
+if VERSION >= v"1.11"
+    @inline function _madnlp_unsafe_wrap(vec::Vector, n, shift=1)
+        ref = n == 0 ? Core.memoryrefnew(vec.ref, shift, false) : memoryref(vec.ref, shift)
+        return Base.wrap(Array, ref, (n,))
+    end
+end
 function _madnlp_unsafe_wrap(vec::VT, n, shift=1) where VT
     return unsafe_wrap(VT, pointer(vec,shift), n)
 end

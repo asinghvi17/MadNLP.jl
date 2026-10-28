@@ -416,7 +416,7 @@ end
 
 function robust!(solver::AbstractMadNLPSolver{T}) where T
     initialize_robust_restorer!(solver)
-    RR = get_RR(solver)
+    RR = get_RR(solver)::RobustRestorer
     while true
         if !get_opt(solver).jacobian_constant
             eval_jac_wrapper!(solver, get_kkt(solver), get_x(solver))

@@ -154,7 +154,7 @@ struct SymbolicException <: Exception end
 struct FactorizationException <: Exception end
 struct SolveException <: Exception end
 struct InertiaException <: Exception end
-LinearSolverException=Union{SymbolicException,FactorizationException,SolveException,InertiaException}
+const LinearSolverException=Union{SymbolicException,FactorizationException,SolveException,InertiaException}
 
 @enum(
     LinearFactorization::Int,
