@@ -16,14 +16,15 @@ mutable struct MadNLPSolver{
     Iterator <: AbstractIterator{T},
     IC <: AbstractInertiaCorrector,
     KKTVec <: AbstractKKTVector{T, VT},
-    ICB
+    ICB,
+    OPT<:MadNLPOptions{T}
     } <: AbstractMadNLPSolver{T}
 
     nlp::Model
     cb::CB
     kkt::KKTSystem
 
-    opt::MadNLPOptions{T}
+    opt::OPT
     cnt::MadNLPCounters
     logger::MadNLPLogger
 

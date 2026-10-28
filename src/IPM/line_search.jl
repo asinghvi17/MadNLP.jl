@@ -127,7 +127,7 @@ end
 =#
 
 function filter_line_search_RR!(solver::AbstractMadNLPSolver{T}) where T
-    RR = get_RR(solver)
+    RR = get_RR(solver)::RobustRestorer
     theta_R = get_theta_R(get_c(solver),RR.pp,RR.nn)
     varphi_R = get_varphi_R(RR.obj_val_R,get_x_lr(solver),get_xl_r(solver),get_xu_r(solver),get_x_ur(solver),RR.pp,RR.nn,RR.mu_R)
     varphi_d_R = get_varphi_d_R(
