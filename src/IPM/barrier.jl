@@ -42,7 +42,7 @@ function _update_monotone_RR!(
     solver::AbstractMadNLPSolver{T},
     sc::T
 ) where T
-    RR = get_RR(solver)
+    RR = get_RR(solver)::RobustRestorer
     inf_compl_mu_R = get_inf_compl_R(
         get_x_lr(solver),
         get_xl_r(solver),

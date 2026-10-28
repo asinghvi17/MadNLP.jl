@@ -39,6 +39,7 @@ include(joinpath("KKT", "KKTsystem.jl"))
 include(joinpath("LinearSolvers", "linearsolvers.jl"))
 include(joinpath("IPM", "IPM.jl"))
 include("precompile.jl")
+include("image_views.jl")
 
 madsuite(::Val{:madnlp}, args...; kwargs...) = madnlp(args...; kwargs...)
 

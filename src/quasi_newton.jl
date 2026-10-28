@@ -45,6 +45,13 @@ The function uses the initial gradient `g0` and the initial objective
 """
 function init! end
 
+function curvature(strategy::BFGSInitStrategy, sk, yk)
+    strategy == SCALAR1 && return curvature(Val(SCALAR1), sk, yk)
+    strategy == SCALAR2 && return curvature(Val(SCALAR2), sk, yk)
+    strategy == SCALAR3 && return curvature(Val(SCALAR3), sk, yk)
+    strategy == SCALAR4 && return curvature(Val(SCALAR4), sk, yk)
+    throw(ArgumentError("invalid BFGS initialization strategy"))
+end
 curvature(::Val{SCALAR1}, sk, yk) = dot(yk, sk) / dot(sk, sk)
 curvature(::Val{SCALAR2}, sk, yk) = dot(yk, yk) / dot(sk, yk)
 function curvature(::Val{SCALAR3}, sk, yk)
@@ -387,7 +394,7 @@ function update!(qn::CompactLBFGS{T}, Bk, sk, yk) where {T}
 
     # Compute compact representation Bₖ = σₖI -UₖUₖᵀ + VₖVₖᵀ
     # Step 1: σₖ I
-    sigma = curvature(Val(qn.init_strategy), sk, yk)    # σₖ
+    sigma = curvature(qn.init_strategy, sk, yk)    # σₖ
     sigma = clamp(sigma, qn.sigma_min, qn.sigma_max)
     Bk .= sigma                                         # Hₖ .= σₖI (diagonal Hessian approx.)
 

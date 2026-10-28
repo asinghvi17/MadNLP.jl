@@ -127,7 +127,7 @@ barrier                        | [`MonotoneUpdate`](@ref) | algorithm to update 
 tau\\_min                      | 0.99                 | lower bound on fraction-to-the-boundary parameter tau
 ||
 """
-@kwdef mutable struct MadNLPOptions{T} <: AbstractOptions
+@kwdef mutable struct MadNLPOptions{T,B<:AbstractBarrierUpdate{T}} <: AbstractOptions
     # Primary options
     tol::T
     callback::Type
@@ -208,7 +208,7 @@ tau\\_min                      | 0.99                 | lower bound on fraction-
 
     # Barrier
     # mu_min by courtesy of Ipopt
-    barrier::AbstractBarrierUpdate{T} = MonotoneUpdate(T(tol), barrier_tol_factor)
+    barrier::B = MonotoneUpdate(T(tol), barrier_tol_factor)
     tau_min::T = 0.99
 
     # KKT system options (passed through to create_kkt_system)
@@ -218,16 +218,25 @@ end
 is_dense_callback(nlp) = !nlp.meta.sparse_jacobian && !nlp.meta.sparse_hessian
 
 # smart option presets
+function MadNLPOptions{T}(; tol, barrier_tol_factor=10.,
+        barrier=MonotoneUpdate(T(tol), barrier_tol_factor), kwargs...) where T
+    MadNLPOptions{T,typeof(barrier)}(; tol, barrier_tol_factor, barrier, kwargs...)
+end
+
 function MadNLPOptions{T}(
     nlp::AbstractNLPModel{T};
     dense_callback = MadNLP.is_dense_callback(nlp),
     callback = dense_callback ? DenseCallback : SparseCallback,
     kkt_system = dense_callback ? DenseCondensedKKTSystem : SparseKKTSystem,
     linear_solver = dense_callback ? LapackCPUSolver : default_sparse_solver(nlp),
-    tol = get_tolerance(T,kkt_system)
+    tol = get_tolerance(T,kkt_system),
+    barrier_tol_factor = 10.,
+    barrier = MonotoneUpdate(T(tol), barrier_tol_factor)
 ) where {T}
     return MadNLPOptions{T}(
         tol = tol,
+        barrier = barrier,
+        barrier_tol_factor = barrier_tol_factor,
         callback = callback,
         kkt_system = kkt_system,
         linear_solver = linear_solver,
@@ -263,7 +272,7 @@ function _get_primary_options(options)
     primary_opt = Dict{Symbol,Any}()
     remaining_opt = Dict{Symbol,Any}()
     for (k,v) in options
-        if k in [:tol, :linear_solver, :callback, :kkt_system]
+        if k in [:tol, :linear_solver, :callback, :kkt_system, :barrier, :barrier_tol_factor]
             primary_opt[k] = v
         else
             remaining_opt[k] = v
